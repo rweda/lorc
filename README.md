@@ -144,6 +144,12 @@ Additional variables customize the behavior of `lorc`, but aren't very dependent
 - **OUTPUT_DIRECTORY**
   is hardcoded to `$OUTPUT_DIRECTORIES/$OUTPUT_SUFFIX/`.  To completely replace the `OUTPUT_SUFFIX` and
   `OUTPUT_DIRECTORIES` functionality, manually set `OUTPUT_DIRECTORY` in the script.
+- **WARN_EXTERNAL**
+  determines if a character should be added to the shell's prompt if you `cd` outside of the project.
+  This should warn you if you switch to a different project, but still have the `lorc` installed utilities in `PROMPT`.
+  By default, `WARN_EXTERNAL=false`.
+- **WARN_EXTERNAL_CHAR**
+  sets the character added to the end of the `PS1` prompt, if `WARN_EXTERNAL=true`.  Defaults to a red `⚠` symbol.
 
 [Configuration]: #configuration
 [alias directories]: #alias-directories

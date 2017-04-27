@@ -69,6 +69,12 @@ local OUTPUT_DIRECTORIES="$SCRIPT_DIR${OUTPUT_DIRECTORIES:-"aliases/"}"
 # The directory to store "alias directories" in.  A random number will be appended to the name.
 local OUTPUT_DIRECTORY="$OUTPUT_DIRECTORIES/$OUTPUT_SUFFIX/"
 
+# If `true`, adds a warning to the prompt if you `cd` out of the project while `lorc` is active.
+local WARN_EXTERNAL=${WARN_EXTERNAL:-false}
+
+# The character(s) to add to the prompt to warn when outside the project.
+local WARN_EXTERNAL_CHAR=${WARN_EXTERNAL_CHAR:-"\033[0;31m⚠\033[0m  "}
+
 ##################################################
 ##########     End of Configuration     ##########
 ##################################################
@@ -144,6 +150,18 @@ fi
 ###  Add created directory to `PATH`  ###
 
 export PATH="$PATH:$OUTPUT_DIRECTORY"
+
+### Add a function to the prompt to warn when you've cd'd out of the project.  ###
+if [ "$WARN_EXTERNAL" = true ]; then
+  export LORC_PROJECT_ABS_PATH="$(lorc_resolve_path "$PROJECT_PATH")"
+  export LORC_WARN_EXTERNAL_CHAR="$WARN_EXTERNAL_CHAR"
+  lorc_warn_external () {
+    if [[ "$PWD" != "$LORC_PROJECT_ABS_PATH"* ]]; then
+      echo -ne "$LORC_WARN_EXTERNAL_CHAR"
+    fi
+  }
+  export PS1="$PS1\$(lorc_warn_external)"
+fi
 
 unset lorc_resolve_path
 unset lorc_command_free
