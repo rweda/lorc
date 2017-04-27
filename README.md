@@ -16,6 +16,9 @@ that you need to reference when you've `cd`'d into other directories in the proj
 `lorc` will temporarily add the scripts you need from the `bin` directory to your `PATH`, so you can call them directly
 by name.
 
+`lorc` could stand for **lo**cal .bash**rc**, and might rhyme with "lurk".
+But that's up for interpretation.
+
 ### Features
 
 - `lorc` checks that scripts don't share a name with globally installed packages
@@ -33,7 +36,7 @@ curl http://cdn.rawgit.com/rweda/lorc/v1.0.0/lorc -o bin/lorc
 
 Replace `v1.0.0` with a previous [version number](https://github.com/rweda/lorc/releases) or `master` to get the
 absolute latest code.
-Replace `bin/lorc` to specify an output location for the script.
+Replace `bin/lorc` to specify an output location for the script or use a different name if you don't like `lorc`.
 
 Edit the downloaded script to customize to your specific needs.
 
