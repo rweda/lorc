@@ -19,25 +19,6 @@ local PROJECT_PATH="$SCRIPT_PATH${PROJECT_PATH:-"../"}"
 # A directory containing the script(s).
 local SCRIPT_DIR="$PROJECT_PATH${SCRIPT_DIR:-"bin/"}"
 
-# `true` will delete old alias directories that (hopefully) aren't still in use.
-local REMOVE_OLD=${REMOVE_OLD:-true}
-
-# The oldest directories to keep, in days
-local REMOVE_OLD_AFTER=${REMOVE_OLD_AFTER:-20}
-
-# `false` makes this script abort if the script names being added to `PATH` already exist.
-local ALLOW_OVERLOAD=${ALLOW_OVERLOAD:-false}
-
-# A suffix to append to the "alias directory".  By default, uses a random 12 character alphanumeric
-local OUTPUT_SUFFIX=${OUTPUT_SUFFIX:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)}
-
-# The directory to store "alias directories" in.  Must not contain any other files or directories other than the
-# directories created by `lorc`.
-local OUTPUT_DIRECTORIES="$SCRIPT_DIR${OUTPUT_DIRECTORIES:-"aliases/"}"
-
-# The directory to store "alias directories" in.  A random number will be appended to the name.
-local OUTPUT_DIRECTORY="$OUTPUT_DIRECTORIES/$OUTPUT_SUFFIX/"
-
 # `true` if only a single script should be added to `PATH`.
 local SINGLE_SCRIPT=${SINGLE_SCRIPT:-true}
 
@@ -69,11 +50,28 @@ else
 
 fi
 
+# `true` will delete old alias directories that (hopefully) aren't still in use.
+local REMOVE_OLD=${REMOVE_OLD:-true}
+
+# The oldest directories to keep, in days
+local REMOVE_OLD_AFTER=${REMOVE_OLD_AFTER:-20}
+
+# `false` makes this script abort if the script names being added to `PATH` already exist.
+local ALLOW_OVERLOAD=${ALLOW_OVERLOAD:-false}
+
+# A suffix to append to the "alias directory".  By default, uses a random 12 character alphanumeric
+local OUTPUT_SUFFIX=${OUTPUT_SUFFIX:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)}
+
+# The directory to store "alias directories" in.  Must not contain any other files or directories other than the
+# directories created by `lorc`.
+local OUTPUT_DIRECTORIES="$SCRIPT_DIR${OUTPUT_DIRECTORIES:-"aliases/"}"
+
+# The directory to store "alias directories" in.  A random number will be appended to the name.
+local OUTPUT_DIRECTORY="$OUTPUT_DIRECTORIES/$OUTPUT_SUFFIX/"
+
 ##################################################
 ##########     End of Configuration     ##########
 ##################################################
-
-local PROJECT="$( cd "$PROJECT_PATH" && pwd )"
 
 function lorc_resolve_path () {
   mkdir -p "$1"
