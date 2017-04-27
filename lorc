@@ -1,0 +1,161 @@
+#!/bin/bash
+
+# `lorc` is a utility to simplify running meta-scripts inside a project.    https://github.com/rweda/lorc
+
+# Copyright (c) 2017 Redwood EDA.
+# See https://github.com/rweda/lorc/blob/master/LICENSE.md for full license.
+
+lorc () { # (Function used to provide locally-scoped variables)
+local LORC_SCRIPT=$BASH_SOURCE
+local SCRIPT_PATH="$( dirname "$LORC_SCRIPT" )/"
+
+###########################################
+##########     Configuration     ##########
+###########################################
+
+# The path from this script to the project directory.
+local PROJECT_PATH="$SCRIPT_PATH${PROJECT_PATH:-"../"}"
+
+# A directory containing the script(s).
+local SCRIPT_DIR="$PROJECT_PATH${SCRIPT_DIR:-"bin/"}"
+
+# `true` will delete old alias directories that (hopefully) aren't still in use.
+local REMOVE_OLD=${REMOVE_OLD:-true}
+
+# The oldest directories to keep, in days
+local REMOVE_OLD_AFTER=${REMOVE_OLD_AFTER:-20}
+
+# `false` makes this script abort if the script names being added to `PATH` already exist.
+local ALLOW_OVERLOAD=${ALLOW_OVERLOAD:-false}
+
+# A suffix to append to the "alias directory".  By default, uses a random 12 character alphanumeric
+local OUTPUT_SUFFIX=${OUTPUT_SUFFIX:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)}
+
+# The directory to store "alias directories" in.  Must not contain any other files or directories other than the
+# directories created by `lorc`.
+local OUTPUT_DIRECTORIES="$SCRIPT_DIR${OUTPUT_DIRECTORIES:-"aliases/"}"
+
+# The directory to store "alias directories" in.  A random number will be appended to the name.
+local OUTPUT_DIRECTORY="$OUTPUT_DIRECTORIES/$OUTPUT_SUFFIX/"
+
+# `true` if only a single script should be added to `PATH`.
+local SINGLE_SCRIPT=${SINGLE_SCRIPT:-true}
+
+if [ "$SINGLE_SCRIPT" = true ]; then
+
+  # The filename of the script to add to `PATH`
+  local SCRIPT_NAME=${SCRIPT_NAME:-"util"}
+  
+  # An alias to access the script
+  local SCRIPT_ALIAS=${SCRIPT_ALIAS:-$1}
+
+else
+
+  # The filenames of scripts to add to `PATH`, space seperated.  Use a Bash array if you want to get fancy.
+  local SCRIPT_NAMES=(${SCRIPT_NAMES:-"util"})
+  
+  # Called on each item in `SCRIPT_NAMES` to find a possible alias.
+  # Default functionality is to see if there is an environment variable `$1_ALIAS` - `util_ALIAS` for the `util` script.
+  # Otherwise, if `$SCRIPT_PREFIX` is set, all commands are prefixed with `$SCRIPT_PREFIX`.
+  # Failing both of those, nothing is returned - meaning the command will not be aliased.
+  lorc_script_alias () {
+    local REPLACEMENT="$1_ALIAS"
+    if [ ! -z "${!REPLACEMENT}" ]; then
+      echo "${!REPLACEMENT}"
+    elif [ ! -z "$SCRIPT_PREFIX" ]; then
+      echo "$SCRIPT_PREFIX$1"
+    fi
+  }
+
+fi
+
+##################################################
+##########     End of Configuration     ##########
+##################################################
+
+local PROJECT="$( cd "$PROJECT_PATH" && pwd )"
+
+function lorc_resolve_path () {
+  mkdir -p "$1"
+  echo "$( cd "$1" >/dev/null 2>&1 && pwd )" 
+}
+
+mkdir -p "$(lorc_resolve_path $OUTPUT_DIRECTORIES)"
+
+###  Remove any old alias directories  ###
+
+#if [ "$REMOVE_OLD" = true ]; then
+#  find $(lorc_resolve_path "$OUTPUT_DIRECTORIES")/* -type d -ctime "+$REMOVE_OLD_AFTER" | xargs rm -rf
+#fi
+
+###  Check if any of the commands are already in `PATH`.  ##
+function lorc_command_free () {
+  command -v "$1" >/dev/null 2>&1 && {
+    echo "'$1' is already a command in '\$PATH'."
+    if [ $ALLOW_OVERLOAD = true ]; then
+      echo "Ignoring overloading '$1'.  Set 'ALLOW_OVERLOAD' to 'false' to disable this behavior."
+    else
+      echo "Provide an alias/prefix for '$1', or set 'ALLOW_OVERLOAD' to 'true' to ignore these errors."
+      return 2
+    fi
+  }
+}
+if [ "$SINGLE_SCRIPT" = true ]; then
+  if [ ! -z "$SCRIPT_ALIAS" ]; then
+    lorc_command_free "$SCRIPT_ALIAS"
+  else
+    lorc_command_free "$SCRIPT_NAME"
+  fi
+else
+  echo "Checking ${SCRIPT_NAMES[@]}"
+  for SCRIPT_NAME in "${SCRIPT_NAMES[@]}"; do
+    echo "Checking $SCRIPT_NAME"
+    local SCRIPT_ALIAS="$(lorc_script_alias $SCRIPT_NAME)"
+    if [ ! -z "$SCRIPT_ALIAS" ]; then
+      lorc_command_free "$SCRIPT_ALIAS"
+    else
+      lorc_command_free "$SCRIPT_NAME"
+    fi
+    echo "Done checking $SCRIPT_NAME (Alias: $SCRIPT_ALIAS)"
+  done
+fi
+
+###  Create each alias  ###
+lorc_create_alias () {
+  local SYMLINK_NAME=$1
+  local TARGET_NAME=$2
+  if [ -z "$TARGET_NAME" ]; then local TARGET_NAME=$SYMLINK_NAME; fi
+  local SYMLINK_PATH="$OUTPUT_DIRECTORY$SYMLINK_NAME"
+  local SYMLINK_DIR="$(lorc_resolve_path $OUTPUT_DIRECTORY)$SYMLINK_NAME"
+  mkdir -p SYMLINK_PATH || {
+    echo "Could not create directory '$SYMLINK_DIR' when creating '$SYMLINK_NAME' to point at '$TARGET_NAME'."
+    return 2
+  }
+  echo "#!/bin/sh" > "$SYMLINK_PATH" && \
+  echo "$(lorc_resolve_path $SCRIPT_DIR)/$TARGET_NAME \$@" >> "$SYMLINK_PATH" || {
+    echo "Could not create symbolic link '$SYMLINK_PATH' to point at '$TARGET_NAME'"
+    return 2
+  }
+  chmod +x "$SYMLINK_PATH"
+}
+if [ "$SINGLE_SCRIPT" = true ]; then
+  lorc_create_alias $SCRIPT_ALIAS $SCRIPT_NAME
+else
+  for SCRIPT_NAME in "${SCRIPT_NAMES[@]}"; do
+    local SCRIPT_ALIAS="$(lorc_script_alias $SCRIPT_NAME)"
+    lorc_create_alias $SCRIPT_ALIAS $SCRIPT_NAME
+  done
+fi
+
+###  Add created directory to `PATH`  ###
+
+export PATH="$PATH:$OUTPUT_DIRECTORY"
+
+unset lorc_resolve_path
+unset lorc_command_free
+unset lorc_create_alias
+unset lorc_script_alias
+}
+
+lorc
+unset lorc
