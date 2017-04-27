@@ -82,9 +82,9 @@ mkdir -p "$(lorc_resolve_path $OUTPUT_DIRECTORIES)"
 
 ###  Remove any old alias directories  ###
 
-#if [ "$REMOVE_OLD" = true ]; then
-#  find $(lorc_resolve_path "$OUTPUT_DIRECTORIES")/* -type d -ctime "+$REMOVE_OLD_AFTER" | xargs rm -rf
-#fi
+if [ "$REMOVE_OLD" = true ]; then
+  find -regex ".*$(lorc_resolve_path "$OUTPUT_DIRECTORIES")/.*" -type d -ctime "+$REMOVE_OLD_AFTER" | xargs rm -rf
+fi
 
 ###  Check if any of the commands are already in `PATH`.  ##
 function lorc_command_free () {
@@ -125,10 +125,6 @@ lorc_create_alias () {
   if [ -z "$TARGET_NAME" ]; then local TARGET_NAME=$SYMLINK_NAME; fi
   local SYMLINK_PATH="$OUTPUT_DIRECTORY$SYMLINK_NAME"
   local SYMLINK_DIR="$(lorc_resolve_path $OUTPUT_DIRECTORY)$SYMLINK_NAME"
-  mkdir -p SYMLINK_PATH || {
-    echo "Could not create directory '$SYMLINK_DIR' when creating '$SYMLINK_NAME' to point at '$TARGET_NAME'."
-    return 2
-  }
   echo "#!/bin/sh" > "$SYMLINK_PATH" && \
   echo "$(lorc_resolve_path $SCRIPT_DIR)/$TARGET_NAME \$@" >> "$SYMLINK_PATH" || {
     echo "Could not create symbolic link '$SYMLINK_PATH' to point at '$TARGET_NAME'"
