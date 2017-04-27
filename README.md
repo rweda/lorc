@@ -13,7 +13,8 @@ Reference local meta-scripts from any directory in your project.  `PATH="$PATH:$
 Got utilities in a `bin` directory local to your current project, such as build, lint, testing, or packaging scripts,
 that you need to reference when you've `cd`'d into other directories in the project?
 
-`lorc` will temporarily add the scripts you need from the `bin` directory to your `PATH`.
+`lorc` will temporarily add the scripts you need from the `bin` directory to your `PATH`, so you can call them directly
+by name.
 
 ### Features
 
